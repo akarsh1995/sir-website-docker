@@ -1,0 +1,56 @@
+version: '3'
+
+services:
+    app:
+        build: 
+            dockerfile: ./services/app/Dockerfile
+            context: .
+        command: uwsgi
+        ports:
+            - "8000:8000"
+            - "8001:8001"
+        env_file:
+            - .env
+        depends_on: 
+            - postgres
+        links: 
+            - postgres:postgres
+        volumes:
+            - ./data/staticfiles:/usr/src/app/staticfiles
+            - ./data/media:/usr/src/app/media
+    postgres:
+        image: postgres:12.1
+        hostname: postgres
+        ports:
+            - "${POSTGRES_PORT}:${POSTGRES_PORT}"
+        env_file:
+            - .env
+        volumes:
+            - ./data/postgres:/var/lib/postgresql/data
+
+    encrypted_nginx:
+        image: linuxserver/letsencrypt
+        cap_add:
+            - NET_ADMIN
+        environment:
+            - PUID=1000
+            - PGID=1000
+            - TZ=Europe/London
+            - URL=${FQDN}
+            - SUBDOMAINS=${SUBDOMAIN},
+            - VALIDATION=http
+            - EMAIL=${CERTBOT_EMAIL}
+        volumes:
+            - ./data/staticfiles:/static
+            - ./data/media:/media
+            - ./services/config:/config
+        ports:
+            - 443:443
+            - 80:80
+        restart: unless-stopped
+        env_file: 
+            - .env
+        depends_on:
+            - app
+        links:
+            - app:app
