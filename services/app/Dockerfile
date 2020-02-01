@@ -11,7 +11,6 @@ RUN apk add --no-cache --virtual .build-deps \
     ca-certificates gcc g++ bash linux-headers musl-dev \
     curl-dev libressl-dev git \
     postgresql-dev postgresql-client gettext \
-    git \
     jpeg-dev \
     zlib-dev \
     freetype-dev \
@@ -23,11 +22,12 @@ RUN apk add --no-cache --virtual .build-deps \
     harfbuzz-dev \
     fribidi-dev
 
-RUN git clone https://github.com/akarsh1995/sir-website.git .
+COPY ./app/Pipfile* ./
 RUN pip install pipenv
 
 RUN pipenv sync
 ENV PYTHONPATH $PATH:/usr/src
+COPY ./app .
 COPY ./services/config/uwsgi/* /deployment/
 CMD ["uwsgi"]
 
